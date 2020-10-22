@@ -19,13 +19,12 @@ Steg::Steg(std::string image, bool toEncode, std::string newImage, std::string t
 	// boolean to know where to input/output
 	bool useFile = (txt != "");
 	if (toEncode) {
-		cout << "Encoding..." << endl;
+//		cout << "Encoding..." << endl;
 		if (useFile) {
 			ifstream ifile(txtfile);
 			// if something wrong with file, don't modify output
 			if (!ifile.is_open()) {
-				cout << "Error opening input file" << endl;
-				cout << "Enter a message to encode: " << endl;
+//				cout << "Error opening input file" << endl;
 				std::getline(cin, msg);
 			}
 			else {
@@ -38,16 +37,15 @@ Steg::Steg(std::string image, bool toEncode, std::string newImage, std::string t
 		}
 		// if not using file, get the message from the std input
 		else {
-			cout << "Enter a message to encode: " << endl;
 			std::getline(cin, msg);
 		}
 
 		encode();
-		cout << "The image was encoded to " << newImage << endl;
+//		cout << "The image was encoded to " << newImage << endl;
 	}
 
 	else {
-		cout << "Decoding..." << endl;
+//		cout << "Decoding..." << endl;
 
 		decode();
 
@@ -56,14 +54,14 @@ Steg::Steg(std::string image, bool toEncode, std::string newImage, std::string t
 			// put output in text file
 			ofstream ofile(txtfile);
 			if (!ofile.is_open()) {
-				cout << "Error opening output file. Message was: " << endl;
+//				cout << "Error opening output file. Message was: " << endl;
 				cout << msg;
 				return;
 			}
 			
 			ofile << msg << endl;
-			cout << "The message was placed in " << txtfile << endl;
-			cout << "It contained the message:\n" << msg;
+//			cout << "The message was placed in " << txtfile << endl;
+//			cout << "It contained the message:\n" << msg;
 			ofile.close();
 		}
 		else {
@@ -94,7 +92,7 @@ void Steg::decodeImage() {
 	unsigned error = lodepng::decode(image, width, height, ogImg);
 
 	//if there's an error, display it
-	if (error) std::cout << "decoder error " << error << ": " << lodepng_error_text(error) << std::endl;
+	if (error) throw exception("Image error");
 
 	//the pixels are now in the vector "image" of the class, 4 bytes per pixel, ordered RGBARGBA...
 }
@@ -102,8 +100,9 @@ void Steg::decodeImage() {
 
 // modifies RGBA vector to produce modified encoded image vector
 void Steg::insertMsg() {
-	// set iterator for image and add a end of file character to msg for detection later
+	// set iterator for image and add two end of file characters to msg for detection later
 	vector<unsigned char>::iterator imgItr = image.begin();
+	msg.push_back(0x03);
 	msg.push_back(0x03);
 
 	// iterate through each character in the message, inserting from MSB to LSB
@@ -122,20 +121,25 @@ void Steg::insertMsg() {
 void Steg::extractMsg() {
 	msg = "";
 	unsigned char c = 0x00;
+	unsigned char prev = 0x00;
 	vector<unsigned char>::iterator imgItr = image.begin();
 
-	// go through until terminator character is found
+	// go through until terminator characters found
 	// taking each bit and shifting into place
-	while (c != 0x03) {
+	while (imgItr != image.end()) {
+		prev = c;
 		c = 0x00;
 		for (int shift = 7; shift >= 0 && imgItr != image.end(); shift--) {
 			c = c | ((*imgItr & 0x01) << shift);
 			imgItr++;
 		}
+		if (prev == 0x03 && c == 0x03) {
+			break;
+		}
 		msg.push_back(c);
 	}
 
-	// drop the terminator
+	// drop the one terminator
 	if (imgItr != image.end()) {
 		msg.pop_back();
 	}
@@ -149,6 +153,6 @@ void Steg::encodeToImage() {
 
 	//if there's an error, display it - from lodepng
 	if (error) {
-		std::cout << "encoder error " << error << ": " << lodepng_error_text(error) << std::endl;
+		throw exception("encoding error");
 	}
 }

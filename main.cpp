@@ -17,8 +17,9 @@ Attribution: used lodepng libraries from LodePNG to decode and encode images
 using namespace std;
 
 void printUsage() {
-	cout << " steg -e <original image name> <modified image name> [input ASCII text file name]\n"
-		<< "steg - d <modified image name> [output ASCII text file name]"
+	cout << "Usage\n" 
+		<< "steg -e <original image name> <modified image name> [input ASCII text file name]\n"
+		<< "steg -d <modified image name> [output ASCII text file name]"
 		<< endl;
 }
 
@@ -35,25 +36,33 @@ int main(int argc, char** argv) {
 	string imageToDecode = argv[2];
 	string newImage;
 	string textFile;
-
-	if (directionED == "-e") {
-		if (argc == 4) { 
-			Steg encoder = Steg(argv[2], true, argv[3]);
+	try {
+		if (directionED == "-e") {
+			if (argc == 3) {
+				printUsage();
+				return 1;
+			}
+			if (argc == 4) {
+				Steg encoder = Steg(argv[2], true, argv[3]);
+			}
+			else if (argc == 5) { // includes text file
+				Steg encoder = Steg(argv[2], true, argv[3], argv[4]);
+			}
 		}
-		else if (argc == 5) { // includes text file
-			Steg encoder = Steg(argv[2], true, argv[3], argv[4]);
-		}
-	}
-	else if (directionED == "-d") {
-		if (argc == 4) {
-			Steg decoder = Steg(argv[2], false, "", argv[3]);
+		else if (directionED == "-d") {
+			if (argc == 4) {
+				Steg decoder = Steg(argv[2], false, "", argv[3]);
+			}
+			else {
+				Steg decoder = Steg(argv[2], false, "");
+			}
 		}
 		else {
-			Steg decoder = Steg(argv[2], false, "");
+			printUsage();
+			return 2;
 		}
 	}
-	else {
+	catch (exception e) {
 		printUsage();
-		return 2;
 	}
 }
